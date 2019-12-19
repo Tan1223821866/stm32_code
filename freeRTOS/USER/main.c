@@ -175,9 +175,6 @@ void task1_task(void *pvParameters)
             {
                 printf("队列Key_Queue已满，数据发送失败!\r\n");
             }
-				else{
-					printf("队列Key_Queue未满，数据发送成功!\r\n");
-				}
         }
         i++;
         if(i%10==0) check_msg_queue();//检Message_Queue队列的容量
