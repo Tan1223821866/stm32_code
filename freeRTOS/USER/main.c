@@ -199,6 +199,7 @@ void Keyprocess_task(void *pvParameters)
 		{
 			if(xQueueReceive(Key_Queue,&key,portMAX_DELAY))//请求消息Key_Queue
 			{
+				 printf("打印接收按键值：%d\r\n",key);
 				 switch(key)
 				 {
 					  case WKUP_PRES:		//KEY_UP控制LED1
