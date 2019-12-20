@@ -121,7 +121,7 @@ void TIM1_BRK_TIM9_IRQHandler(void)
 			err=xQueueReceiveFromISR(Message_Queue,buffer,&xTaskWokenByReceive);//请求消息Message_Queue
             if(err==pdTRUE)			//接收到消息
             {
-				disp_str(buffer);	//在LCD上显示接收到的消息
+					disp_str(buffer);	//在LCD上显示接收到的消息
             }
         }
 		myfree(SRAMIN,buffer);		//释放内存

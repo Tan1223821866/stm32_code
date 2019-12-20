@@ -40,7 +40,16 @@ TaskHandle_t Task1Task_Handler;
 void task1_task(void *pvParameters);
 
 //任务优先级
-#define KEYPROCESS_TASK_PRIO 3
+#define TASK2_TASK_PRIO		3
+//任务堆栈大小	
+#define TASK2_STK_SIZE 		256  
+//任务句柄
+TaskHandle_t Task2Task_Handler;
+//任务函数
+void task2_task(void *pvParameters);
+
+//任务优先级
+#define KEYPROCESS_TASK_PRIO 4
 //任务堆栈大小	
 #define KEYPROCESS_STK_SIZE  256 
 //任务句柄
@@ -147,15 +156,22 @@ void start_task(void *pvParameters)
                 (uint16_t       )TASK1_STK_SIZE,        
                 (void*          )NULL,                  
                 (UBaseType_t    )TASK1_TASK_PRIO,        
-                (TaskHandle_t*  )&Task1Task_Handler);   
-    //创建TASK2任务
+                (TaskHandle_t*  )&Task1Task_Handler); 
+	 //创建TASK2任务
+    xTaskCreate((TaskFunction_t )task2_task,             
+                (const char*    )"task2_task",           
+                (uint16_t       )TASK2_STK_SIZE,        
+                (void*          )NULL,                  
+                (UBaseType_t    )TASK2_TASK_PRIO,        
+                (TaskHandle_t*  )&Task2Task_Handler); 					 
+    //创建TASK3任务
     xTaskCreate((TaskFunction_t )Keyprocess_task,     
                 (const char*    )"keyprocess_task",   
                 (uint16_t       )KEYPROCESS_STK_SIZE,
                 (void*          )NULL,
                 (UBaseType_t    )KEYPROCESS_TASK_PRIO,
                 (TaskHandle_t*  )&Keyprocess_Handler); 		 
-					 
+	
     vTaskDelete(StartTask_Handler); //删除开始任务
     taskEXIT_CRITICAL();            //退出临界区
 }
@@ -188,6 +204,17 @@ void task1_task(void *pvParameters)
 }
 
 
+void task2_task(void *pvParameters)
+{
+	static u16 Task2Handle_Count;
+	while(1)
+	{
+		Task2Handle_Count++;
+		printf("%d\r\n",Task2Handle_Count);
+		vTaskDelay(1000);                           //延时10ms，也就是10个时钟节拍
+	}
+}
+
 //Keyprocess_task函数
 void Keyprocess_task(void *pvParameters)
 {
@@ -199,7 +226,6 @@ void Keyprocess_task(void *pvParameters)
 		{
 			if(xQueueReceive(Key_Queue,&key,portMAX_DELAY))//请求消息Key_Queue
 			{
-				 printf("打印接收按键值：%d\r\n",key);
 				 switch(key)
 				 {
 					  case WKUP_PRES:		//KEY_UP控制LED1
@@ -213,6 +239,7 @@ void Keyprocess_task(void *pvParameters)
 							LCD_Fill(126,111,233,313,lcd_discolor[num%14]);
 							break;
 				 }
+				 printf("打印接收按键值：%d\t%d\r\n",key,num);
 			}
 		} 
 		vTaskDelay(10);      //延时10ms，也就是10个时钟节拍	
