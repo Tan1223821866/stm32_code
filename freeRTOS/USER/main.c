@@ -118,6 +118,17 @@ void check_msg_queue(void)
 	taskEXIT_CRITICAL();    //退出临界区
 }
 
+typedef struct stTestStruct_Queue{
+	u8 		host[3];
+	u16		port;
+	char 		path[4];
+	char 	   method[5];
+	u8       data;
+	u32      param;
+}stTestStruct_Queue_t;
+
+stTestStruct_Queue_t  stTestStruct_Queue ={0};
+
 int main(void)
 { 
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);//设置系统中断优先级分组4
@@ -147,7 +158,7 @@ void start_task(void *pvParameters)
     taskENTER_CRITICAL();           //进入临界区
 	
 	//创建消息队列
-    Key_Queue=xQueueCreate(KEYMSG_Q_NUM,sizeof(u8));        //创建消息Key_Queue
+    Key_Queue=xQueueCreate(KEYMSG_Q_NUM,sizeof(stTestStruct_Queue));        //创建消息Key_Queue
     Message_Queue=xQueueCreate(MESSAGE_Q_NUM,USART_REC_LEN); //创建消息Message_Queue,队列项长度是串口接收缓冲区长度
 	
     //创建TASK1任务
@@ -181,23 +192,34 @@ void task1_task(void *pvParameters)
 {
 	u8 key,i=0;
    BaseType_t err;
+	
+	stTestStruct_Queue.host[0] = 10;
+	stTestStruct_Queue.host[1] = 20;
+	stTestStruct_Queue.host[2] = 30;
 	while(1)
 	{
 		  key=KEY_Scan(0);            				//扫描按键
         if((Key_Queue!=NULL)&&(key))   			//消息队列Key_Queue创建成功,并且按键被按下
         {
-            err=xQueueSend(Key_Queue,&key,10);
+			  	stTestStruct_Queue.host[0] += 10;
+			   stTestStruct_Queue.host[1] += 10;
+			   stTestStruct_Queue.host[2] += 10;
+			  
+            err=xQueueSend(Key_Queue,&stTestStruct_Queue.host,10);
             if(err==errQUEUE_FULL)   				//发送按键值
             {
                 printf("队列Key_Queue已满，数据发送失败!\r\n");
             }
         }
         i++;
+		  u8 LocalVariable=0;
         if(i%10==0) check_msg_queue();//检Message_Queue队列的容量
         if(i==50)
         {
             i=0;
             LED0=!LED0;
+				LocalVariable++;
+//			   printf("打印局部变量测试值：%d\r\n",LocalVariable);
         }
         vTaskDelay(10);                           //延时10ms，也就是10个时钟节拍	
 	}
@@ -206,11 +228,11 @@ void task1_task(void *pvParameters)
 
 void task2_task(void *pvParameters)
 {
-	static u16 Task2Handle_Count;
+	u8 Task2Handle_Count=0;
 	while(1)
 	{
 		Task2Handle_Count++;
-		printf("%d\r\n",Task2Handle_Count);
+//		printf("任务1执行次数：%d\r\n",Task2Handle_Count);
 		vTaskDelay(1000);                           //延时10ms，也就是10个时钟节拍
 	}
 }
@@ -219,12 +241,11 @@ void task2_task(void *pvParameters)
 void Keyprocess_task(void *pvParameters)
 {
 	u8 num,key;
-	
 	while(1)
 	{
 		if(Key_Queue!=NULL)
 		{
-			if(xQueueReceive(Key_Queue,&key,portMAX_DELAY))//请求消息Key_Queue
+			if(xQueueReceive(Key_Queue,& stTestStruct_Queue.host,portMAX_DELAY))//请求消息Key_Queue
 			{
 				 switch(key)
 				 {
@@ -239,7 +260,8 @@ void Keyprocess_task(void *pvParameters)
 							LCD_Fill(126,111,233,313,lcd_discolor[num%14]);
 							break;
 				 }
-				 printf("打印接收按键值：%d\t%d\r\n",key,num);
+				 printf("打印接收按键值：%d\t%d\t%d\r\n", stTestStruct_Queue.host[0],stTestStruct_Queue.host[1],stTestStruct_Queue.host[2]);
+				 printf("打印其他数");
 			}
 		} 
 		vTaskDelay(10);      //延时10ms，也就是10个时钟节拍	
